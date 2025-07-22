@@ -1,0 +1,141 @@
+/* General styling */
+body {
+    font-family: 'Courier Prime', monospace;
+    margin: 0;
+    padding: 0;
+    background-color: #222;
+}
+
+.navbar {
+    background-color: #2c3e50;
+    padding: 1rem 1rem; /* Increased padding for height */
+    color: #ecf0f1;
+    text-align: center;
+
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+}
+
+.logo-img {
+    height: 180px; /* Adjust height for clarity */
+    width: 200px;  /* Maintain aspect ratio */
+}
+
+/* Add box shadow to the left logo */
+.navbar-brand:first-child .logo-img {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* Adjust shadow as needed */
+}
+
+header {
+    background-color: #557392;
+    color: #ecf0f1;
+    position: relative; /* Allows absolute positioning of image */
+    padding-top: 20px;  /* Space for image */
+}
+
+header .container {
+    text-align: center; /* Keeps the header text centered */
+}
+
+header .lead {
+    font-size: 2rem; /* Increased font size for better visibility */
+}
+
+header .header-img {
+    position: absolute;
+    top: 20px; /* Adjust this to move the image down */
+    right: 20px; /* Position the image on the right */
+    z-index: 10;
+}
+
+header .header-img img {
+    max-height: 80px; /* Controls image size */
+    width: auto;
+}
+
+main {
+    background-color: #2e3b4e;
+}
+
+.feature-block {
+    background-color: #34495e;
+    color: #ecf0f1;
+    border-radius: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.feature-block:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.feature-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+.feature-description {
+    font-size: 1rem;
+    margin-bottom: 20px;
+}
+
+.btn-outline-success {
+    border-color: #1abf72;
+    color: #1abf72;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.btn-outline-success:hover {
+    background-color: #1abf72;
+    color: #fff;
+}
+
+footer {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+}
+
+footer p {
+    margin: 0;
+}
+
+/* Welcome title styling */
+.welcome-title {
+    font-family: 'Courier Prime', monospace;
+    font-weight: bold;
+    font-size: 2.5rem;
+    color: #ecf0f1;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .feature-block {
+        height: 300px;
+    }
+}
+
+header .lead {
+    font-size: 3rem; /* Increased font size for better visibility */
+    margin-bottom: 20px; /* Optional: add some space below */
+}
+
+/* Mixed color text styling */
+.mixed-color-text {
+    background: linear-gradient(to right, #5d504d, #5d504d, #5d504d, #5d504d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text; /* Standard property for compatibility */
+}

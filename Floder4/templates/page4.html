@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inode Cache Visualization</title>
+    <style>
+        /* General styling */
+        body {
+            font-family: 'Courier Prime', monospace;
+            margin: 0;
+            padding: 0;
+            background-color: #1e272e;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: row;
+        }
+
+        h1, h2 {
+            color: #00cec9;
+            margin-left: 20px;
+        }
+
+        form {
+            margin: 20px;
+        }
+
+        input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            border: 1px solid #00cec9;
+            border-radius: 5px;
+            background-color: #222f3e;
+            color: #ecf0f1;
+        }
+
+        button {
+            padding: 8px 15px;
+            background-color: #00cec9;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #00b894;
+        }
+
+        table {
+            width: 50%;
+            margin: 20px;
+            border-collapse: collapse;
+            background-color: #34495e;
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            border: 1px solid #00cec9;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2d3436;
+        }
+
+        tr:nth-child(even) {
+            background-color: #2f3640;
+        }
+
+        .highlight {
+            background-color: gold;
+            color: black;
+        }
+
+        ul {
+            margin-left: 20px;
+            padding-left: 20px;
+        }
+
+        canvas {
+            display: block;
+            border: 1px solid #ecf0f1;
+            background-color: #2d3436;
+        }
+
+        /* Layout */
+        .content {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            padding: 10px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            input[type="text"] {
+                width: 50%;
+            }
+
+            table {
+                width: 100%;
+                font-size: 0.8rem;
+            }
+
+            .content, .canvas-container {
+                flex: 1;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>Inode Cache Visualization</h1>
+
+        <!-- Search Component -->
+        <div>
+            <form action="/app4/" method="POST">
+                <input type="text" name="search_name" placeholder="Enter file path">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+
+        <h2>File System Lookup</h2>
+
+        <table border="1">
+            <thead>
+                <tr>    
+                    {% for column in namei_columns %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in namei_data %}
+                    <tr>
+                        <td class="{% if row[0]|string in search_components %}highlight{% endif %}">{{ row[0] }}</td>
+                        <td class="{% if row[1]|string in search_components %}highlight{% endif %}">{{ row[1] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="visualCanvas" width="1200" height="1000"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('visualCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawTextBox(x, y, text, width, height, bgColor, textColor, fontSize, strokeStyle = "transparent") {
+            x += 0; // Shift to the right side
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(x, y, width, height);
+
+            if (strokeStyle !== "transparent") {
+                ctx.strokeStyle = strokeStyle;
+                ctx.strokeRect(x, y, width, height);
+            }
+
+            ctx.fillStyle = textColor;
+            ctx.font = `${fontSize}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const lines = text.split("\n");
+            const lineHeight = fontSize + 2;
+            lines.forEach((line, index) => {
+                ctx.fillText(line, x + width / 2, y + height / 2 + (index - lines.length / 2 + 0.5) * lineHeight);
+            });
+        }
+
+        function getCenter(x, y, width, height) {
+            x += 0; // Shift to the right side  
+            return { cx: x + width / 2, cy: y + height / 2};
+        }
+
+        function drawFreeList(freeBlockPositions, boxStartY, hashQueue) {
+            const freeListX = 10; // Adjusted for right side alignment
+            const freeListY = boxStartY + 7 * 120;
+            drawTextBox(freeListX, freeListY, "Free List", 120, 50, "lightblue", "black", 0);
+            const freeListCenter = getCenter(freeListX, freeListY, 120, 50);
+
+            if (freeBlockPositions.length > 0) {
+                freeBlockPositions.reverse();
+
+                ctx.beginPath();
+                ctx.moveTo(freeListCenter.cx, freeListCenter.cy);
+                ctx.lineTo(freeBlockPositions[0].cx, freeBlockPositions[0].cy);
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                for (let k = 0; k < freeBlockPositions.length - 1; k++) {
+                    ctx.beginPath();
+                    ctx.moveTo(freeBlockPositions[k].cx, freeBlockPositions[k].cy);
+                    ctx.lineTo(freeBlockPositions[k + 1].cx, freeBlockPositions[k + 1].cy);
+                    ctx.strokeStyle = "white";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+        async function fetchHashQueue() {
+    const response = await fetch('/app4/get_hash_queue');
+    const data = await response.json();
+
+    const freeBlockPositions = [];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const boxStartY = 20;
+
+    data.forEach((box, index) => {
+        const boxY = boxStartY + index * 120;
+
+        box.forEach((block, j) => {
+            const blockX = 150 + j * 200;
+            const blockY = boxY;
+
+            if (block.free) {
+                freeBlockPositions.push(getCenter(blockX, blockY, 150, 70));
+            }
+        });
+    });
+
+    drawFreeList(freeBlockPositions, boxStartY, data);
+
+    data.forEach((box, index) => {
+        const boxLabel = `Box ${index}`;
+        const boxX = 20;
+        const boxY = boxStartY + index * 120;
+
+        drawTextBox(boxX, boxY, boxLabel, 80, 50, "SteelBlue", "white", 16);
+
+        box.forEach((block, j) => {
+            const blockX = 150 + j * 200;
+            const blockY = boxY;
+            const blockNumber = block.block_number ?? "N/A";
+            const purpose = block.purpose ?? "N/A";
+            const status = block.free ? "Free" : "Busy";
+
+            // If block number is N/A, display purpose and status in the same box
+            const blockText = blockNumber === "N/A" 
+                ? `Block: ${blockNumber}\nPurpose: ${purpose}\nStatus: ${status}` 
+                : `Block: ${blockNumber}\nPurpose: ${purpose}\nStatus: ${status}`;
+
+            const blockColor = block.free ? "#71eb6d" : "white";
+
+            drawTextBox(blockX, blockY, blockText, 150, 70, blockColor, "black", 12);
+        });
+    });
+}
+
+        async function addBlock() {
+            const blockNumber = document.getElementById('block_number').value;
+            const purpose = document.getElementById('purpose').value;
+
+            const response = await fetch('/app4/add_block', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ block_number: parseInt(blockNumber), purpose })
+            });
+
+            const result = await response.json();
+            alert(result.message || result.error);
+            fetchHashQueue();
+        }
+
+        async function freeBlock() {
+            const blockNumber = document.getElementById('block_number').value;
+
+            const response = await fetch('/app4/free_block', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ block_number: parseInt(blockNumber) })
+            });
+
+            const result = await response.json();
+            alert(result.message || result.error);
+            fetchHashQueue();
+        }
+
+        fetchHashQueue();
+    </script>
+</body>
+</html>

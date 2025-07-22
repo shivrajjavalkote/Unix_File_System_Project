@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disk Visualization Simulator</title>
+    <link rel="stylesheet" href="../static/style.css"> <!-- Link to the external style.css file -->
+   
+</head>
+<body>
+
+    <header>
+        <h1 id="heading">Disk Visualization Simulator</h1>
+        
+    </header>
+
+    <main>
+        <div class="instructions-btn">?</div>
+        <div class="instructions">
+            <h2>Instructions</h2>
+            <ul id="instruction_list">
+                <li>Specify the disk size in MB (fixed 1KB block size).</li>
+                <li>The disk is divided into four partitions:
+                    <ol>
+                        <li>Boot Block (Green color)</li>
+                        <li>Superblock (Red color)</li>
+                        <li>Inode Blocks (Blue color)</li>
+                        <li>Data Blocks (Yellow color)</li>
+                    </ol>
+                </li>
+                <li>Explore the partitions to understand how each manages different types of system data.</li>
+                <li>View the file hierarchy to see available files in the system.</li>
+                <li>Click on any block or inode to view its contents (metadata or file data).</li>
+                <li>Clicking an inode displays file metadata, such as name, size, and permissions.</li>
+                <li>Clicking a data block reveals the actual data stored within it.</li>
+                <li>Use the console to perform file operations: create, remove, and read files.</li>
+                <li>Type <code>help</code> in the console to view a list of available commands.</li>
+                <li>Observe the updates in inode and data blocks after performing file operations.</li>
+                <li>Watch the disk structure change as files are created or deleted.</li>
+            </ul>
+                   
+        </div>
+        
+        <div class="container">
+            <div class="directory-container">
+                <h1 id="filehead">File Hierarchy</h1>
+                <!-- Your existing directory structure -->
+                <div class="tree-view">
+                    <ul>
+                        {% for root in directory_structure %}
+                            <li>
+                                <div class="tree-node">
+                                    <span class="toggle-icon"><i class="fas fa-chevron-right"></i></span>
+                                    <i class="fas fa-folder icon"></i> {{ root.name }}
+                                </div>
+                                <ul class="nested">
+                                    {% for subdirectory in root.subdirectories %}
+                                        <li>
+                                            <div class="tree-node">
+                                                <span class="toggle-icon"><i class="fas fa-chevron-right"></i></span>
+                                                <i class="fas fa-folder icon"></i> {{ subdirectory.name }}
+                                            </div>
+                                            <ul class="nested">
+                                                {% for file in subdirectory.files %}
+                                                    <li>
+                                                        <div class="tree-node file-node">
+                                                            <i class="fas fa-file icon"></i> {{ file.name }}
+                                                        </div>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+        
+        
+            </div>
+            <div class="terminal-container">
+                <div id="terminal">
+                    <div id="output"></div>
+                    <div id="input-line">
+                        <span style="font-weight:bold">admin@admin:<span style="color:blue">~/Documents</span><span style="color:white">$ </span></span>
+                        <input type="text" id="input" autofocus>
+                    </div>
+                </div>
+            </div>
+
+
+           
+        </div>
+        
+        <!-- Your existing disk container -->
+       <h2 id="title">Hard-Disk</h2>
+
+        <div class="disk-container">
+            <div class="disk-visualization">
+                {% for block in disk_structure.blocks[:26] %}
+                <div class="block 
+                    {% if block.block_type == 'boot' %}boot-block
+                    {% elif block.block_type == 'super' %}super-block
+                    {% elif block.block_type == 'inode' %}inode-block
+                    {% elif block.block_type == 'data' %}data-block
+                    {% endif %}"
+                    data-block-number="{{ block.block_number }}"
+                    data-block-type="{{ block.block_type }}"
+                    {% if block.block_type != 'inode' %}data-block-content="{{ block.content }}"{% endif %}>
+                    <div class="block-number">
+                        {% if block.block_type != 'inode' %}
+                            {{ block.block_number }}
+                        {% endif %}
+                    </div>
+                    
+                    {% if block.block_type == 'inode' %}
+                        {% for inode in block.inodes %}
+                        <div class="inode-partition" 
+                        data-inode-id="{{ inode.inode_id }}"
+                        data-file-name="{{ inode.file_name }}"
+                        data-permissions="{{ inode.permissions }}"
+                        data-size="{{ inode.size }}"
+                        data-owner="{{ inode.owner }}"
+                        data-group="{{ inode.group }}"
+                        data-created="{{ inode.created }}"
+                        data-last-modified="{{ inode.last_modified }}"
+                        data-last-accessed="{{ inode.last_accessed }}">
+                        {{ inode.inode_id }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="dots">...</div>
+
+                {% for block in disk_structure.blocks[-5:] %}
+                <div class="block 
+                    {% if block.block_type == 'boot' %}boot-block
+                    {% elif block.block_type == 'super' %}super-block
+                    {% elif block.block_type == 'inode' %}inode-block
+                    {% elif block.block_type == 'data' %}data-block
+                    {% endif %}"
+                    data-block-number="{{ block.block_number }}"
+                    data-block-type="{{ block.block_type }}"
+                    {% if block.block_type != 'inode' %}data-block-content="{{ block.content }}"{% endif %}>
+                    
+                    <div class="block-number">
+                        {% if block.block_type != 'inode' %}
+                            {{ block.block_number }}
+                        {% endif %}
+                    </div>
+                    
+                    {% if block.block_type == 'inode' %}
+                        {% for inode in block.inodes %}
+                        <div class="inode-partition" 
+                        data-inode-id="{{ inode.inode_id }}"
+                        data-file-name="{{ inode.file_name }}"
+                        data-permissions="{{ inode.permissions }}"
+                        data-size="{{ inode.size }}"
+                        data-owner="{{ inode.owner }}"
+                        data-group="{{ inode.group }}"
+                        data-created="{{ inode.created }}"
+                        data-last-modified="{{ inode.last_modified }}"
+                        data-last-accessed="{{ inode.last_accessed }}">
+                        {{ inode.inode_id }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+       <!-- Block Modal -->
+        <div id="blockModal" class="modal" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Block Details</h2>
+                <p><strong>Block Number:</strong> <span id="blockNumber"></span></p>
+                <p><strong>Block Type:</strong> <span id="blockType"></span></p>
+                <p><strong>Block Content:<br></strong> <span id="blockContent"></span></p>
+            </div>
+        </div>
+
+        <!-- Inode Modal -->
+        <div id="inodeModal" class="modal" aria-hidden="true">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Inode Details</h2>
+                <p><strong>Inode Number:</strong> <span id="inodeNumber"></span></p>
+                <p><strong>File Name:</strong> <span id="inodeFileName"></span></p>
+                <p><strong>Permissions:</strong> <span id="inodePermissions"></span></p>
+                <p><strong>Size:</strong> <span id="inodeSize"></span></p>
+                <p><strong>Owner:</strong> <span id="inodeOwner"></span></p>
+                <p><strong>Group:</strong> <span id="inodeGroup"></span></p>
+                <p><strong>Created:</strong> <span id="inodeCreated"></span></p>
+                <p><strong>Last Modified:</strong> <span id="inodeLastModified"></span></p>
+                <p><strong>Last Accessed:</strong> <span id="inodeLastAccessed"></span></p>
+                 
+            </div>
+        </div>
+
+
+    </main>
+
+    <script>
+                // Event listener for blocks
+        document.querySelectorAll('.block').forEach(block => {
+            block.addEventListener('click', function () {
+                const blockTypeValue = this.getAttribute('data-block-type');
+                if (blockTypeValue === 'inode') return;
+
+                document.getElementById('blockNumber').innerText = this.getAttribute('data-block-number');
+                document.getElementById('blockType').innerText = blockTypeValue;
+                document.getElementById('blockContent').innerText = this.getAttribute('data-block-content') || "No data available";
+                
+                document.getElementById('blockModal').style.display = 'block';
+            });
+        });
+
+        // Event listener for inode partitions
+        document.querySelectorAll('.inode-partition').forEach(inode => {
+            inode.addEventListener('click', function () {
+                document.getElementById('inodeNumber').innerText = this.getAttribute('data-inode-id');
+                document.getElementById('inodeFileName').innerText = this.getAttribute('data-file-name');
+                document.getElementById('inodePermissions').innerText = this.getAttribute('data-permissions');
+                document.getElementById('inodeSize').innerText = this.getAttribute('data-size');
+                document.getElementById('inodeOwner').innerText = this.getAttribute('data-owner');
+                document.getElementById('inodeGroup').innerText = this.getAttribute('data-group');
+                document.getElementById('inodeCreated').innerText = this.getAttribute('data-created');
+                document.getElementById('inodeLastModified').innerText = this.getAttribute('data-last-modified');
+                document.getElementById('inodeLastAccessed').innerText = this.getAttribute('data-last-accessed');
+                document.getElementById('inodeModal').style.display = 'block';
+            });
+        });
+
+        // Close the modal
+        document.querySelectorAll('.close').forEach(closeButton => {
+            closeButton.addEventListener('click', function () {
+                document.getElementById('blockModal').style.display = 'none';
+                document.getElementById('inodeModal').style.display = 'none';
+            });
+        });
+
+        // Close modal if clicking outside of modal
+        window.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        });
+         // Toggle nested tree items
+         document.querySelectorAll('.tree-node').forEach(node => {
+            const nestedList = node.nextElementSibling;
+            const toggleIcon = node.querySelector('.toggle-icon i');
+            const folderIcon = node.querySelector('.fas.fa-folder');
+        
+            // Default to open nested items
+            if (nestedList && nestedList.classList.contains('nested')) {
+                nestedList.classList.add('active');
+                toggleIcon.classList.remove('fa-chevron-right');
+                toggleIcon.classList.add('fa-chevron-down');
+                if (folderIcon) {
+                    folderIcon.classList.remove('fa-folder');
+                    folderIcon.classList.add('fa-folder-open');
+                }
+            }
+
+            node.addEventListener('click', function () {
+                if (nestedList) {
+                    nestedList.classList.toggle('active');
+                    toggleIcon.classList.toggle('fa-chevron-right');
+                    toggleIcon.classList.toggle('fa-chevron-down');
+                    if (folderIcon) {
+                        folderIcon.classList.toggle('fa-folder');
+                        folderIcon.classList.toggle('fa-folder-open');
+                    }
+                }
+            });
+        });
+        const inputField = document.getElementById('input');
+        const outputDiv = document.getElementById('output');
+    
+        // Write output in terminal
+        function writeOutput(text) {
+            const output = document.createElement('div');
+            output.classList.add('output');
+            output.textContent = text;
+            outputDiv.appendChild(output);
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+    
+        // Process commands
+        inputField.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const command = inputField.value.trim();
+                inputField.value = '';
+                processCommand(command);
+            }
+        });
+    
+        // Handle commands like 'touch', 'rm', 'append', 'read', 'ls'
+        function processCommand(command) {
+            writeOutput('$ ' + command);
+    
+            if (command.startsWith('touch ')) {
+                const [_, filename] = command.split(' ');
+                if (filename) {
+                    touchFile(filename);
+                } else {
+                    writeOutput('Error: Please provide filename');
+                }
+            } else if (command.startsWith('append ')) {
+                const [_, filename, ...contentParts] = command.split(' ');
+                const content = contentParts.join(' ');
+                if (filename && content) {
+                    appendToFile(filename, content);
+                } else {
+                    writeOutput('Error: Please provide filename and content');
+                }
+            } else if (command.startsWith('read ')) {
+                const [_, filename] = command.split(' ');
+                if (filename) {
+                    readFile(filename);
+                } else {
+                    writeOutput('Error: Please provide filename');
+                }
+            } else if (command.startsWith('rm ')) {
+                const [_, filename] = command.split(' ');
+                if (filename) {
+                    rmFile(filename);
+                } else {
+                    writeOutput('Error: Please provide filename');
+                }
+            
+            } else if (command === 'help') {
+                showHelp();
+            } else {
+                writeOutput('Unknown command: ' + command);
+            }
+        }
+    
+        // Command to 'touch' a file
+        function touchFile(filename) {
+            fetch('/touch_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    writeOutput('Error: ' + data.error);
+                } else {
+
+                    // Display the success message and details in an alert
+                    writeOutput(data.message);
+                    alert(`File created successfully!\nFilename: ${data.filename}\nInode ID: ${data.inode_id}\nBlock Number: ${data.block_number}`);
+                    window.location.reload();
+
+                }
+            })
+            .catch(err => writeOutput('Error: ' + err.message));
+        }
+
+                // Command to append content to a file
+        function appendToFile(filename, content) {
+            fetch('/append_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename, content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    writeOutput('Error: ' + data.error);
+                } else {
+                    writeOutput(data.message);
+                    alert(`Append data successfully !`);
+                    window.location.reload();
+
+                }
+            })
+            .catch(err => writeOutput('Error: ' + err.message));
+        }
+    
+        // Command to read content from a file
+        function readFile(filename) {
+            fetch('/read_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.content) {
+                    writeOutput('Content of ' + filename + ':');
+                    writeOutput(data.content);
+                } else if (data.error) {
+                    writeOutput('Error: ' + data.error);
+                }
+            })
+            .catch(err => writeOutput('Error: ' + err.message));
+        }
+    
+        // Command to remove (rm) a file
+        function rmFile(filename) {
+            fetch('/rm_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    writeOutput('Error: ' + data.error);
+                } else {
+                    window.location.reload();
+                    alert(`File remove successfully !`);
+                    writeOutput(data.message);
+                }
+            })
+            .catch(err => writeOutput('Error: ' + err.message));
+        }
+    
+        
+    
+        function showHelp() {
+            writeOutput('Available commands:');
+            writeOutput('1. touch <filename> - Create a new file');
+            writeOutput('2. append <filename> <content> - Append content to a file');
+            writeOutput('3. read <filename> - Read content of a file');
+            writeOutput('4. rm <filename> - Remove a file');
+            writeOutput('5. help - Show this help message');
+        }
+    
+        // Initial prompt
+        writeOutput('Welcome to the Unix File System Simulator');
+        writeOutput('Type "help" for available commands');
+
+
+        document.querySelector('.instructions-btn').addEventListener('click', () => {
+            const instructions = document.querySelector('.instructions');
+            instructions.classList.toggle('open');
+        });
+        
+        
+
+    </script>
+</body>
+</html>

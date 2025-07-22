@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>13 Member Array Visualization</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: 'Courier Prime', monospace;
+            margin: 0;
+            padding: 0;
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #ecf0f1;
+        }
+    
+        /* Instructions Button in Top Left Corner */
+        .instructions-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background-color: #34495e;
+            color: #fff;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    
+        .instructions-btn:hover {
+            background-color: #1abc9c;
+        }
+    
+        /* Instructions Pop-up */
+        .instructions {
+            width: 300px;
+            height: 90vh; /* Full height of the viewport */
+            padding: 20px;
+            background-color: #34495e;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: none;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+    
+        .instructions h2 {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+        }
+    
+        .instructions p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+    
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #1abc9c;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    
+        /* Controls Styling */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #34495e;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            gap: 20px; /* Set gap between control elements */
+        }
+    
+        .controls label {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+    
+        .controls input[type="text"] {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 80%;
+        }
+    
+        .controls button {
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            margin: 10px;
+            width: 80%;
+            cursor: pointer;
+            background-color: #1abf72;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+        }
+    
+        .controls button:hover {
+            background-color: #16a148;
+        }
+    
+        .blocks-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            background-color: #2e3b4e;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 10px;
+            gap: 15px; /* Set gap between blocks */
+        }
+    
+        .block {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 90%;
+            height: 50px;
+            margin: 5px 0;
+            font-size: 1.2rem;
+            text-align: center;
+            background-color: #34495e;
+            border: 2px solid #555;
+            border-radius: 5px;
+            position: relative;
+        }
+    
+        .block.highlighted {
+            background-color: #ffe135;
+            color: #000;
+        }
+    
+        .child-block {
+            width: 50px;
+            height: 30px;
+            margin: 3px;
+            background-color: #666;
+            color: #fff;
+            text-align: center;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            border: 1px solid #555;
+        }
+    
+        .child-block.highlighted {
+            background-color: #ffe135;
+            color: #000;
+        }
+    
+        .arrow-box-wrapper {
+            display: flex;
+            align-items: center;
+            position: absolute;
+            left: 105%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+    
+        .arrow {
+            width: 50px;
+            height: 2px;
+            background-color: #ffe135;
+            position: relative;
+        }
+    
+        .arrow::after {
+            content: "";
+            position: absolute;
+            top: -5px;
+            right: -10px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid #ffe135;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+    
+        .indirect-box {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* 6x6 matrix */
+            gap: 10px;
+            align-items: start;
+            background-color: #444;
+            border: 2px solid #555;
+            border-radius: 5px;
+            padding: 10px;
+            margin-left: 10px;
+            box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            height: 300px;
+            overflow-y: auto;
+        }
+    
+        /* Navbar Styling */
+        .navbar {
+            background-color: #2c3e50;
+            padding: 1rem 1rem;
+            color: #ecf0f1;
+            text-align: center;
+        }
+    
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+        }
+    
+        .logo-img {
+            height: 180px;
+            width: 200px;
+        }
+    
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .blocks-container {
+                max-width: 100%;
+            }
+            .controls {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Instructions Button -->
+    <button class="instructions-btn" onclick="showInstructions()">Show Instructions</button>
+
+    <!-- Instructions Pop-up -->
+    <div class="instructions" id="instructions">
+        <button class="close-btn" onclick="closeInstructions()">X</button>
+        <h2>13 Member Array in Unix</h2>
+        <p>The 13-member array structure is a key component in the Unix file system, used for mapping disk blocks. These blocks are categorized into direct, indirect, double indirect, and triple indirect blocks, each serving different purposes in file storage. The direct blocks hold pointers to data blocks, while indirect blocks point to other blocks, which in turn point to data blocks. This hierarchical structure enables efficient data management and retrieval in the file system.</p>
+        <p>The visualization below represents this structure and shows how blocks are highlighted and mapped according to the 13-member array logic.</p>
+    </div>
+
+    <!-- User Input and Block Structure in Center -->
+    <div class="controls" style="margin-right: 50px;">
+        <label for="file-size">Enter File Size (bytes):</label>
+        <input type="text" id="file-size" placeholder="Enter size">
+        <div class="button-container">
+            <button onclick="mapBlocks()">Map Blocks</button>
+            <button onclick="resetBlocks()">Reset</button>
+        </div>
+    </div>
+
+    <div class="blocks-container" id="blocks-container">
+        <!-- Direct Blocks -->
+        <div id="block0" class="block">Direct Block 0</div>
+        <div id="block1" class="block">Direct Block 1</div>
+        <div id="block2" class="block">Direct Block 2</div>
+        <div id="block3" class="block">Direct Block 3</div>
+        <div id="block4" class="block">Direct Block 4</div>
+        <div id="block5" class="block">Direct Block 5</div>
+        <div id="block6" class="block">Direct Block 6</div>
+        <div id="block7" class="block">Direct Block 7</div>
+        <div id="block8" class="block">Direct Block 8</div>
+        <div id="block9" class="block">Direct Block 9</div>
+
+        <!-- Indirect Blocks -->
+        <div id="singleIndirect" class="block">Single Indirect Block</div>
+        <div id="doubleIndirect" class="block">Double Indirect Block</div>
+        <div id="tripleIndirect" class="block">Triple Indirect Block</div>
+    </div>
+
+    <script>
+        const DIRECT_BLOCKS = 10;
+        const BLOCK_SIZE = 1024;
+        const SINGLE_INDIRECT_LIMIT = 256;
+        const DOUBLE_INDIRECT_LIMIT = SINGLE_INDIRECT_LIMIT * 256;
+
+        function mapBlocks() {
+            const fileSize = parseInt(document.getElementById("file-size").value, 10);
+            if (isNaN(fileSize) || fileSize <= 0) {
+                alert("Please enter a valid file size.");
+                return;
+            }
+
+            resetBlocks();
+
+            const numBlocks = Math.ceil(fileSize / BLOCK_SIZE);
+
+            for (let i = 0; i < numBlocks; i++) {
+                if (i < DIRECT_BLOCKS) {
+                    highlightBlock(`block${i}`);
+                } else if (i < DIRECT_BLOCKS + SINGLE_INDIRECT_LIMIT) {
+                    highlightIndirect("singleIndirect", i - DIRECT_BLOCKS);
+                } else if (i < DIRECT_BLOCKS + SINGLE_INDIRECT_LIMIT + DOUBLE_INDIRECT_LIMIT) {
+                    highlightIndirect("doubleIndirect", i - DIRECT_BLOCKS - SINGLE_INDIRECT_LIMIT);
+                } else {
+                    highlightIndirect("tripleIndirect", i - DIRECT_BLOCKS - SINGLE_INDIRECT_LIMIT - DOUBLE_INDIRECT_LIMIT);
+                }
+            }
+        }
+
+        function highlightBlock(blockId) {
+            const block = document.getElementById(blockId);
+            if (block) block.classList.add("highlighted");
+        }
+
+        function highlightIndirect(blockId, numChildren) {
+            const block = document.getElementById(blockId);
+            if (!block) return;
+
+            block.classList.add("highlighted");
+            const wrapper = document.createElement("div");
+            wrapper.className = "arrow-box-wrapper";
+
+            const arrow = document.createElement("div");
+            arrow.className = "arrow";
+
+            const box = document.createElement("div");
+            box.className = "indirect-box";
+
+            const numChildBlocks = Math.min(numChildren, 36); // Limit to 6x6 matrix
+
+            for (let i = 0; i < numChildBlocks; i++) {
+                const child = document.createElement("div");
+                child.className = "child-block highlighted";
+                child.textContent = `Block ${i}`; // Start from 0
+                box.appendChild(child);
+            }
+
+            wrapper.appendChild(arrow);
+            wrapper.appendChild(box);
+            block.appendChild(wrapper);
+        }
+
+        function resetBlocks() {
+            document.querySelectorAll(".block").forEach(block => {
+                block.classList.remove("highlighted");
+                block.innerHTML = block.innerHTML.split('<')[0]; // Remove dynamically added elements
+            });
+            document.getElementById("file-size").value = "";
+        }
+
+        // Show Instructions Pop-up
+        function showInstructions() {
+            document.getElementById("instructions").style.display = "block";
+        }
+
+        // Close Instructions Pop-up
+        function closeInstructions() {
+            document.getElementById("instructions").style.display = "none";
+        }
+    </script>
+</body>
+</html>

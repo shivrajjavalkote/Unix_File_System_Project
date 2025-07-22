@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OS Simulator - Setup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style5.css') }}">
+<body id="body">
+    <div class="instructions-btn">?</div>
+        <div class="instructions">
+            <h2>Instructions</h2>
+            <ul id="instruction_list">
+                <li>Specify the disk size in MB (with a fixed 1KB block size).</li>
+                <li>The disk is divided into four partitions:
+                    <ol>
+                        <li>Boot Block (Green color)</li>
+                        <li>Superblock (Red color)</li>
+                        <li>Inode Blocks (Blue color)</li>
+                        <li>Data Blocks (Yellow color)</li>
+                    </ol>
+                </li>
+                <li>Explore the partitions to understand how each manages different types of system data.</li>
+                <li>View the file hierarchy to see available files in the system.</li>
+                <li>Click on any block or inode to view its contents (metadata or file data).</li>
+                <li>Clicking an inode displays file metadata, such as name, size, and permissions.</li>
+                <li>Clicking a data block reveals the actual data stored within it.</li>
+                <li>Use the console to perform file operations: create, remove, and read files.</li>
+                <li>Type <code>help</code> in the console to view a list of available commands.</li>
+                <li>Observe the updates in inode and data blocks after performing file operations.</li>
+                <li>Watch the disk structure change as files are created or deleted.</li>
+            </ul>
+                   
+        </div>
+        
+    <div class="form-container">
+        <h1>OS Simulator Setup</h1>
+        <form action="/" method="POST" onsubmit="showLoading();">
+            <label for="size_mb" title="Enter the size in MB (between 1 and 10 MB)">Enter Disk Size (MB):</label>
+            <input type="number" id="size_mb" name="size_mb" placeholder="Enter size in MB" value="{{ size_mb }}" required min="1" max="10" step="1">
+
+            <!-- Error message -->
+            {% if error_message %}
+                <p style="color: red; font-weight: bold;">{{ error_message }}</p>
+            {% endif %}
+
+            <button type="submit">Create Hard Disk</button>
+        </form>
+        
+        <!-- Loading Indicator -->
+        <div id="loading">
+            <p>Creating your hard disk, please wait...</p>
+        </div>
+
+        <div class="footer">
+            <label style="font-size:16px">[Block size = 1KB]</label>
+
+            <p>OS Simulator - Version 1.0</p>
+        </div>
+    </div>
+
+    <script>
+        function showLoading() {
+            // Display loading message
+            document.getElementById('loading').style.display = 'block';
+            
+            // Set a 5-second delay to hide the loading message
+            setTimeout(function() {
+                document.getElementById('loading').style.display = 'none';
+            }, 5000);  // 5000 milliseconds = 5 seconds
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const instructions = document.querySelector('.instructions');
+            instructions.classList.add('open'); // Make it open by default
+        
+            document.querySelector('.instructions-btn').addEventListener('click', () => {
+                instructions.classList.toggle('open');
+            });
+        });
+        
+    </script>
+</body>
+</html>

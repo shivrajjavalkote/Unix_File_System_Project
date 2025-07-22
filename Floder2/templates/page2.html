@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buffer Cache Visualization</title>
+    <style>
+        /* General styling */
+        body {
+            font-family: 'Courier Prime';
+            margin: 0;
+            padding: 0;
+            background-color: #333333; /* Dark grey background */
+            color: #ffffff; /* White text color */
+        }
+
+        header {
+            background-color: #4e657b;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 10px;
+        }
+
+        main {
+            background-color: #333333; /* Dark grey background */
+            padding: 20px;
+        }
+
+        #controls {
+            background-color: #444444;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: transparent;
+            border: 2px solid #1abf72;
+            color: #1abf72;
+            padding: 5px 10px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        footer {
+            background-color: #4e657b;
+            color: #ecf0f1;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            button {
+                padding: 3px 8px;
+                font-size: 14px;
+            }
+        }
+
+        /* Instructions Button in Top Right Corner */
+        .instructions-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background-color: #333;
+            color: #fff;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .instructions-btn:hover {
+            background-color: #444;
+        }
+
+        /* Instructions Pop-up */
+        .instructions {
+            width: 300px;
+            height: 90vh; /* Full height of the viewport */
+            padding: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 20px;
+            right: 20px; /* Position the pop-up on the right */
+            display: none;
+            z-index: 1000;
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+
+        .instructions h2 {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+        }
+
+        .instructions p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Buffer Cache Visualization</h1>
+    </header>
+    <main>
+        <div id="controls">
+            <label>Block Number: <input type="number" id="block_number"></label>
+            <label>Purpose: 
+                <select id="purpose">
+                    <option value="Read">Read</option>
+                    <option value="Write">Write</option>
+                </select>
+            </label>
+            <button onclick="addBlock()">Add Block</button>
+            <button onclick="freeBlock()">Free Block</button>
+        </div>
+        <canvas id="visualCanvas" width="1200" height="900"></canvas>
+    </main>
+    <footer>
+        <p>&copy; 2024 Unix File System Visualization</p>
+    </footer>
+
+    <!-- Instructions Button -->
+    <div class="instructions-btn" onclick="showInstructions()">Instructions</div>
+
+    <!-- Instructions Pop-up -->
+    <div class="instructions" id="instructions">
+        <button class="close-btn" onclick="closeInstructions()">X</button>
+        <h2>Buffer Cache in Unix File System</h2>
+        <p>In a Unix file system, the buffer cache improves performance by storing frequently accessed disk blocks in memory, reducing the need for repeated disk reads. Managed through a hash queue (a doubly circular linked list), it stores details about each block, such as its number, status, and purpose. Algorithms like getblk, brelse, bread, bwrite, and breada efficiently handle reading, writing, and pre-fetching data. The cache is linked to a free list, which helps manage unused blocks and ensures efficient block allocation and deallocation.</p>
+        <p>The inode cache stores file metadata, allowing quick access to important information like file attributes and locations. This reduces disk I/O and enhances file access speed. Together, the buffer and inode caches optimize system performance by minimizing disk operations and ensuring faster file retrieval, which is crucial for system efficiency.</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('visualCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Function to draw text boxes with rounded corners (border radius)
+        function drawTextBox(x, y, text, width, height, bgColor, textColor, fontSize, strokeStyle = "transparent", borderRadius = 10) {
+            ctx.fillStyle = bgColor;
+
+            // Apply border-radius to the box
+            ctx.beginPath();
+            ctx.moveTo(x + borderRadius, y);
+            ctx.lineTo(x + width - borderRadius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + borderRadius);
+            ctx.lineTo(x + width, y + height - borderRadius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - borderRadius, y + height);
+            ctx.lineTo(x + borderRadius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - borderRadius);
+            ctx.lineTo(x, y + borderRadius);
+            ctx.quadraticCurveTo(x, y, x + borderRadius, y);
+            ctx.closePath();
+            ctx.fill();
+
+            if (strokeStyle !== "transparent") {
+                ctx.strokeStyle = strokeStyle;
+                ctx.lineWidth = 2; // Optional line width for the border
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = textColor;
+            ctx.font = `${fontSize}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const lines = text.split("\n");
+            const lineHeight = fontSize + 2;
+            lines.forEach((line, index) => {
+                ctx.fillText(line, x + width / 2, y + height / 2 + (index - lines.length / 2 + 0.5) * lineHeight);
+            });
+        }
+
+        // Function to calculate the center of a rectangle
+        function getCenter(x, y, width, height) {
+            return { cx: x + width / 2, cy: y + height / 2 };
+        }
+
+        // Function to draw the free list (represented by connected blocks)
+        function drawFreeList(freeBlockPositions, boxStartY, hashQueue) {
+            const freeListX = 20; // Align with boxes
+            const freeListY = boxStartY + 7 * 120; // Positioned below Box 6
+            drawTextBox(freeListX, freeListY, "Free List", 120, 50, "lightblue", "black", 16);
+            const freeListCenter = getCenter(freeListX, freeListY, 120, 50);
+
+            if (freeBlockPositions.length > 0) {
+                freeBlockPositions.reverse();
+
+                ctx.beginPath();
+                ctx.moveTo(freeListCenter.cx, freeListCenter.cy);
+                ctx.lineTo(freeBlockPositions[0].cx, freeBlockPositions[0].cy);
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                for (let k = 0; k < freeBlockPositions.length - 1; k++) {
+                    ctx.beginPath();
+                    ctx.moveTo(freeBlockPositions[k].cx, freeBlockPositions[k].cy);
+                    ctx.lineTo(freeBlockPositions[k + 1].cx, freeBlockPositions[k + 1].cy);
+                    ctx.strokeStyle = "white";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // Fetch the hash queue data and update the canvas visualization
+        async function fetchHashQueue() {
+            const response = await fetch('/app2/get_hash_queue');
+            const data = await response.json();
+
+            const freeBlockPositions = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const boxStartY = 20;
+
+            data.forEach((box, index) => {
+                const boxY = boxStartY + index * 120;
+
+                box.forEach((block, j) => {
+                    const blockX = 150 + j * 200;
+                    const blockY = boxY;
+
+                    if (block.free) {
+                        freeBlockPositions.push(getCenter(blockX, blockY, 150, 70));
+                    }
+                });
+            });
+
+            drawFreeList(freeBlockPositions, boxStartY, data);
+
+            data.forEach((box, index) => {
+                const boxLabel = `Box ${index}`;
+                const boxX = 20;
+                const boxY = boxStartY + index * 120;
+
+                drawTextBox(boxX, boxY, boxLabel, 80, 50, "SteelBlue", "white", 16);
+
+                box.forEach((block, j) => {
+                    const blockX = 150 + j * 200;
+                    const blockY = boxY;
+                    const blockText = `Block: ${block.block_number ?? "N/A"}\nPurpose: ${block.purpose}\nStatus: ${block.free ? "Free" : "Busy"}`;
+                    const blockColor = block.free ? "#71eb6d" : "white";
+
+                    drawTextBox(blockX, blockY, blockText, 150, 70, blockColor, "black", 12);
+                });
+            });
+        }
+
+// Function to add a block to the system
+async function addBlock() {
+    const blockNumber = document.getElementById('block_number').value;
+    const purpose = document.getElementById('purpose').value;
+
+    if (!blockNumber || blockNumber < 0) {
+        alert("Please enter a valid block number (non-negative).");
+        return;
+    }
+
+    const response = await fetch('/app2/add_block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ block_number: parseInt(blockNumber), purpose })
+    });
+
+    const result = await response.json();
+    alert(result.message || result.error);
+    fetchHashQueue(); // Update visualization
+}
+
+// Function to free a block in the system
+async function freeBlock() {
+    const blockNumber = document.getElementById('block_number').value;
+
+    if (!blockNumber || blockNumber < 0) {
+        alert("Please enter a valid block number (non-negative).");
+        return;
+    }
+
+    const response = await fetch('/app2/free_block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ block_number: parseInt(blockNumber) })
+    });
+
+    const result = await response.json();
+    alert(result.message || result.error);
+    fetchHashQueue(); // Update visualization
+}
+
+
+        // Show Instructions Pop-up
+        function showInstructions() {
+            document.getElementById("instructions").style.display = "block";
+        }
+
+        // Close Instructions Pop-up
+        function closeInstructions() {
+            document.getElementById("instructions").style.display = "none";
+        }
+
+        // Fetch hash queue data on page load
+        fetchHashQueue();
+    </script>
+</body>
+</html>
